@@ -113,18 +113,17 @@ def generate_random_string(l: int) -> str:
     rnd_str = ''.join(secrets.choice(alphabet) for i in range(l))
     return rnd_str
 
+
 if __name__ == '__main__':
+    #TODO create tests
     gs: GibberishScore = gibberish_score_factory()
 
-
     test_strings = [
-        'simone',
-        'alessandro',
-        'davide',
-        'yufei',
-        'paper',
-        'phone2347',
-        'ddns',
+        'lamer',
+        'hacker',
+        'noob',
+        'pro',
+        'antani',
     ]
 
     test_strings.extend([generate_random_string(len(s)) for s in test_strings])
