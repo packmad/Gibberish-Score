@@ -11,7 +11,7 @@ import math
 import sys
 
 
-class RandomnessMarkovChain:
+class ProbabilityMarkovChain:
 
     def __init__(self):
         self.markov_chain_graph = None
@@ -86,7 +86,7 @@ class RandomnessMarkovChain:
 class GibberishScore:
 
     def __init__(self, model_pickle: str):
-        self.rmc: RandomnessMarkovChain = pickle.load(open(model_pickle, 'rb'))
+        self.rmc: ProbabilityMarkovChain = pickle.load(open(model_pickle, 'rb'))
 
     def get_gibberish_score(self, input_string: str) -> float:
         return self.rmc.get_score(input_string)
@@ -101,7 +101,7 @@ def gibberish_score_factory() -> GibberishScore:
     assert isdir(models_folder)
     eng_words_pickle = join(models_folder, 'english_words.pickle')
     if not isfile(eng_words_pickle):
-        rmc = RandomnessMarkovChain()
+        rmc = ProbabilityMarkovChain()
         rmc.training(english_words_txt)
         rmc.save_model(eng_words_pickle)
     return GibberishScore(eng_words_pickle)
