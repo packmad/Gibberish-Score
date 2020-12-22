@@ -1,5 +1,5 @@
 import math
-import pathlib
+
 import pickle
 import secrets
 import string
@@ -8,9 +8,9 @@ import tempfile
 
 from collections import Counter, defaultdict
 from networkx import DiGraph, MultiDiGraph
-from os.path import isfile, isdir, join
+from os.path import isfile, isdir, join, basename
 from statistics import mean, mode, median, stdev, quantiles
-from typing import List, Dict
+from typing import List, Dict, Optional
 
 
 class ProbabilityMarkovChain:
@@ -120,32 +120,26 @@ class GibberishScore:
             return True
 
 
-def gibberish_score_factory(
-        dataset_name: str = 'english',
-        model_path: str = None,
-        threshold: bool = False) -> GibberishScore:
-
-    parent_folder = pathlib.Path(__file__).parent
-    datasets_folder = join(parent_folder, 'datasets')
-    assert isdir(datasets_folder)
-    words_txt = join(datasets_folder, f'{dataset_name}_words.txt')
-    assert isfile(words_txt)
-    if model_path is None:
-        model_path = join(tempfile.gettempdir(), f'{dataset_name}_words.pickle')
-    if not isfile(model_path):
+def gibberish_score_factory(dataset_txt: str, model_pickle: Optional[str], threshold: bool = False) -> GibberishScore:
+    if model_pickle is None:
+        assert isfile(dataset_txt)
+        model_pickle = join(tempfile.gettempdir(), f'{basename(dataset_txt)}.pickle')
         rmc = ProbabilityMarkovChain()
-        rmc.training(words_txt)
-        rmc.save_model(model_path)
-    gs = GibberishScore(model_path)
+        rmc.training(dataset_txt)
+        rmc.save_model(model_pickle)
+    else:
+        assert isfile(model_pickle)
+        print(f'Model found at: {model_pickle}')
+    gs = GibberishScore(model_pickle)
     if not threshold:
         return gs
-    with open(words_txt) as fp:
+    assert isfile(dataset_txt)
+    with open(dataset_txt) as fp:
         words = {line: gs.get_gibberish_score(line) for line in fp.read().splitlines() if len(line) >= 2}
     len_to_gs = defaultdict(list)
     for k, v in words.items():
         len_to_gs[len(k)].append(v)
-    if dataset_name == 'english':
-        # precomputed
+    if 'english_words.txt' in dataset_txt:  # precomputed
         gs.threshold = {2: 10, 3: 14, 4: 15, 5: 19, 6: 22, 7: 26, 8: 30, 9: 33, 10: 36, 11: 39, 12: 42, 13: 46, 14: 49,
                         15: 53, 16: 56, 17: 59, 18: 63, 19: 67, 20: 71, 21: 75, 22: 82, 23: 84, 24: 95, 25: 87, 27: 91}
     else:
