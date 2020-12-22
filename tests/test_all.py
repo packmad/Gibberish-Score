@@ -1,12 +1,10 @@
-import unittest
 import pathlib
 import secrets
 import string
+import unittest
+from os.path import join
 
-from os.path import isfile, isdir, join
-
-from gibberish_score.gibberish_score import GibberishScore
-from gibberish_score.model_builder import gibberish_score_factory
+from gibberish_score.gibberish_score import GibberishScore, gibberish_score_factory
 
 
 class TestStringMethods(unittest.TestCase):
