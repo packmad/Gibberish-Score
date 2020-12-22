@@ -5,28 +5,29 @@ import secrets
 import string
 import sys
 
-from collections import Counter
+from collections import Counter, defaultdict
 from networkx import DiGraph, MultiDiGraph
 from os.path import isfile, isdir, join
-from typing import List
+from statistics import mean, mode, median, stdev, quantiles
+from typing import List, Dict
 
 
 class ProbabilityMarkovChain:
 
-    def __init__(self):
+    def __init__(self, top: int = 3):
         self.markov_chain_graph = None
         self.multi_di_graph = MultiDiGraph()
+        self.top = top  # top x probability for generating a string
 
     def training(self, training_txt: str) -> DiGraph:
         assert isfile(training_txt)
         with open(training_txt) as fp:
-            words = [line for line in fp.read().splitlines() if len(line) > 1]
+            words = [line for line in fp.read().splitlines() if len(line) >= 2]
             for w in words:
                 self.add_training_string(w)
         return self.build_model()
 
     def add_training_string(self, s: str):
-        assert len(s) > 1
         s = s.lower()
         for i in range(len(s) - 1):
             self.multi_di_graph.add_edge(s[i], s[i + 1])
@@ -68,7 +69,7 @@ class ProbabilityMarkovChain:
         while len(out_str) < length:
             n_w = [(n, model[char][n]['weight']) for n in model[char]]
             n_w.sort(key=lambda tup: tup[1], reverse=True)
-            char = secrets.choice(n_w[:3])[0]
+            char = secrets.choice(n_w[:self.top])[0]
             out_str.append(char)
         return ''.join(out_str)
 
@@ -91,7 +92,7 @@ class ProbabilityMarkovChain:
             raise Exception('String length must be greater than 1')
         log_sum = sum([math.log(n) for n in self.get_probability_walk(s) if n > 0.0])
         if log_sum == 0.0:
-            raise Exception('Underflow')
+            return sys.float_info.min
         prob_score = math.exp(log_sum)
         assert 0.0 < prob_score < 1.0
         return prob_score
@@ -101,47 +102,52 @@ class GibberishScore:
 
     def __init__(self, model_pickle: str):
         self.rmc: ProbabilityMarkovChain = pickle.load(open(model_pickle, 'rb'))
+        self.threshold = None
 
     def get_gibberish_score(self, input_string: str) -> float:
-        return self.rmc.get_score(input_string)
+        return abs(math.frexp(self.rmc.get_score(input_string))[1])
 
     def get_nongibberish_string(self, length: int):
         return self.rmc.get_nongibberish_string(length)
 
+    def is_gibberish(self, input_string: str) -> bool:
+        if self.threshold is None:
+            raise Exception('No threshold given')
+        try:
+            return self.get_gibberish_score(input_string) > self.threshold[len(input_string)]
+        except KeyError:
+            return True
 
-def gibberish_score_factory(dataset_name: str = 'english') -> GibberishScore:
-    datasets_folder = join(pathlib.Path(__file__).parent.parent, 'datasets')
+
+def gibberish_score_factory(dataset_name: str = 'english', with_threshold: bool = False) -> GibberishScore:
+    main_folder = pathlib.Path(__file__).parent.parent
+    datasets_folder = join(main_folder, 'datasets')
     assert isdir(datasets_folder)
     words_txt = join(datasets_folder, f'{dataset_name}_words.txt')
     assert isfile(words_txt)
-    models_folder = join(pathlib.Path(__file__).parent.parent, 'models')
+    models_folder = join(main_folder, 'models')
     assert isdir(models_folder)
     words_pickle = join(models_folder, f'{dataset_name}_words.pickle')
     if not isfile(words_pickle):
         rmc = ProbabilityMarkovChain()
         rmc.training(words_txt)
         rmc.save_model(words_pickle)
-    return GibberishScore(words_pickle)
-
-
-def generate_random_string(l: int) -> str:
-    return ''.join(secrets.choice(string.ascii_lowercase) for i in range(l))
+    gs = GibberishScore(words_pickle)
+    if not with_threshold:
+        return gs
+    with open(words_txt) as fp:
+        words = {line: gs.get_gibberish_score(line) for line in fp.read().splitlines() if len(line) >= 2}
+    len_to_gs = defaultdict(list)
+    for k, v in words.items():
+        len_to_gs[len(k)].append(v)
+    if dataset_name == 'english':
+        # precomputed
+        gs.threshold = {2: 10, 3: 14, 4: 15, 5: 19, 6: 22, 7: 26, 8: 30, 9: 33, 10: 36, 11: 39, 12: 42, 13: 46, 14: 49,
+                        15: 53, 16: 56, 17: 59, 18: 63, 19: 67, 20: 71, 21: 75, 22: 82, 23: 84, 24: 95, 25: 87, 27: 91}
+    else:
+        gs.threshold = {k: round(quantiles(v, n=10)[8]) for k, v in len_to_gs.items() if len(v) > 2}
+    return gs
 
 
 if __name__ == '__main__':
-    #TODO create tests
-    gs: GibberishScore = gibberish_score_factory('english')
-
-    test_strings = [
-        'lamer',
-        'hacker',
-        'noob',
-        'pro',
-        'antani',
-    ]
-    for ii in range(2,8):
-        test_strings.append(gs.get_nongibberish_string(ii))
-
-    test_strings.extend([generate_random_string(len(s)) for s in test_strings])
-    for s in test_strings:
-        print(f"'{s}'", gs.get_gibberish_score(s))
+    pass
