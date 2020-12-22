@@ -4,6 +4,7 @@ import pickle
 import secrets
 import string
 import sys
+import tempfile
 
 from collections import Counter, defaultdict
 from networkx import DiGraph, MultiDiGraph
@@ -119,21 +120,24 @@ class GibberishScore:
             return True
 
 
-def gibberish_score_factory(dataset_name: str = 'english', with_threshold: bool = False) -> GibberishScore:
-    main_folder = pathlib.Path(__file__).parent.parent
-    datasets_folder = join(main_folder, 'datasets')
+def gibberish_score_factory(
+        dataset_name: str = 'english',
+        model_path: str = None,
+        threshold: bool = False) -> GibberishScore:
+
+    parent_folder = pathlib.Path(__file__).parent
+    datasets_folder = join(parent_folder, 'datasets')
     assert isdir(datasets_folder)
     words_txt = join(datasets_folder, f'{dataset_name}_words.txt')
     assert isfile(words_txt)
-    models_folder = join(main_folder, 'models')
-    assert isdir(models_folder)
-    words_pickle = join(models_folder, f'{dataset_name}_words.pickle')
-    if not isfile(words_pickle):
+    if model_path is None:
+        model_path = join(tempfile.gettempdir(), f'{dataset_name}_words.pickle')
+    if not isfile(model_path):
         rmc = ProbabilityMarkovChain()
         rmc.training(words_txt)
-        rmc.save_model(words_pickle)
-    gs = GibberishScore(words_pickle)
-    if not with_threshold:
+        rmc.save_model(model_path)
+    gs = GibberishScore(model_path)
+    if not threshold:
         return gs
     with open(words_txt) as fp:
         words = {line: gs.get_gibberish_score(line) for line in fp.read().splitlines() if len(line) >= 2}

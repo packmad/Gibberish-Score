@@ -13,7 +13,7 @@ class TestStringMethods(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.gs: GibberishScore = gibberish_score_factory(with_threshold=True)
+        cls.gs: GibberishScore = gibberish_score_factory(threshold=True)
         cls.random_words = ['qdh', 'hucn', 'pmjsi', 'hdpfuy', 'lmwigdl', 'ckxhfgsy', 'trvtqhqwk']
 
     def test_score(self):
