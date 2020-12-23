@@ -4,7 +4,7 @@ import string
 import unittest
 from os.path import join
 
-from gibberish_score.gibberish_score import GibberishScore, gibberish_score_factory
+from gibberish_score.gibberish_score import GibberishScore, gibberish_score_threshold_factory
 
 
 class TestStringMethods(unittest.TestCase):
@@ -17,7 +17,7 @@ class TestStringMethods(unittest.TestCase):
     def setUpClass(cls):
         parent_folder = pathlib.Path(__file__).parent.parent
         dataset_txt = join(parent_folder, 'datasets', 'english_words.txt')
-        cls.gs: GibberishScore = gibberish_score_factory(dataset_txt, None, threshold=True)
+        cls.gs: GibberishScore = gibberish_score_threshold_factory(dataset_txt)
         cls.random_words = ['qdh', 'hucn', 'pmjsi', 'hdpfuy', 'lmwigdl', 'ckxhfgsy', 'trvtqhqwk']
 
     def test_score(self):

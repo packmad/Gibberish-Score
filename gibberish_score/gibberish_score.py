@@ -1,16 +1,15 @@
 import math
-
+import pathlib
 import pickle
 import secrets
 import string
 import sys
-import tempfile
-
 from collections import Counter, defaultdict
+from os.path import isfile, join, basename
+from statistics import quantiles
+from typing import List
+
 from networkx import DiGraph, MultiDiGraph
-from os.path import isfile, isdir, join, basename
-from statistics import mean, mode, median, stdev, quantiles
-from typing import List, Dict, Optional
 
 
 class ProbabilityMarkovChain:
@@ -102,14 +101,14 @@ class ProbabilityMarkovChain:
 class GibberishScore:
 
     def __init__(self, model_pickle: str):
-        self.rmc: ProbabilityMarkovChain = pickle.load(open(model_pickle, 'rb'))
+        self.pmc: ProbabilityMarkovChain = pickle.load(open(model_pickle, 'rb'))
         self.threshold = None
 
     def get_gibberish_score(self, input_string: str) -> float:
-        return abs(math.frexp(self.rmc.get_score(input_string))[1])
+        return abs(math.frexp(self.pmc.get_score(input_string))[1])
 
     def get_nongibberish_string(self, length: int):
-        return self.rmc.get_nongibberish_string(length)
+        return self.pmc.get_nongibberish_string(length)
 
     def is_gibberish(self, input_string: str) -> bool:
         if self.threshold is None:
@@ -120,20 +119,19 @@ class GibberishScore:
             return True
 
 
-def gibberish_score_factory(dataset_txt: str, model_pickle: Optional[str], threshold: bool = False) -> GibberishScore:
-    if model_pickle is None:
-        assert isfile(dataset_txt)
-        model_pickle = join(tempfile.gettempdir(), f'{basename(dataset_txt)}.pickle')
-        rmc = ProbabilityMarkovChain()
-        rmc.training(dataset_txt)
-        rmc.save_model(model_pickle)
-    else:
-        assert isfile(model_pickle)
-        print(f'Model found at: {model_pickle}')
-    gs = GibberishScore(model_pickle)
-    if not threshold:
-        return gs
+def model_builder(dataset_txt: str) -> str:
     assert isfile(dataset_txt)
+    pmc = ProbabilityMarkovChain()
+    pmc.training(dataset_txt)
+    model_pickle = join(pathlib.Path(dataset_txt).parent, f'{basename(dataset_txt)}_model.pickle')
+    pmc.save_model(model_pickle)
+    assert isfile(model_pickle)
+    return model_pickle
+
+
+def gibberish_score_threshold_factory(dataset_txt: str) -> GibberishScore:
+    model_pickle = model_builder(dataset_txt)
+    gs = GibberishScore(model_pickle)
     with open(dataset_txt) as fp:
         words = {line: gs.get_gibberish_score(line) for line in fp.read().splitlines() if len(line) >= 2}
     len_to_gs = defaultdict(list)

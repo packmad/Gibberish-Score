@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="gibberish_score",
-    version="0.0.5",
+    version="0.0.7",
     author="Simone Aonzo",
     author_email="simone.aonzo@gmail.com",
     description="Gibberish score and non-gibberish generator",
