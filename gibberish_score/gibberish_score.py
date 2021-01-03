@@ -102,6 +102,7 @@ class GibberishScore:
 
     def __init__(self, model_pickle: str):
         self.pmc: ProbabilityMarkovChain = pickle.load(open(model_pickle, 'rb'))
+        self.deterministic_string_mapping = dict()
         self.threshold = None
 
     def get_gibberish_score(self, input_string: str) -> float:
@@ -109,6 +110,13 @@ class GibberishScore:
 
     def get_nongibberish_string(self, length: int):
         return self.pmc.get_nongibberish_string(length)
+
+    def get_deterministic_nongibberish_string(self, in_str: str):
+        dngs = self.deterministic_string_mapping.get(in_str)
+        if dngs is None:
+            dngs = self.pmc.get_nongibberish_string(len(in_str)+1)
+            self.deterministic_string_mapping[in_str] = dngs
+        return dngs
 
     def is_gibberish(self, input_string: str) -> bool:
         if self.threshold is None:
