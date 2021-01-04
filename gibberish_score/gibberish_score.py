@@ -117,7 +117,8 @@ class GibberishScore:
             dngs = list(self.pmc.get_nongibberish_string(len(in_str)+1))
             for i in [i for i, c in enumerate(in_str) if c.isupper()]:
                 dngs[i] = dngs[i].upper()
-            self.deterministic_string_mapping[in_str] = ''.join(dngs)
+            dngs = ''.join(dngs)
+            self.deterministic_string_mapping[in_str] = dngs
         return dngs
 
     def is_gibberish(self, input_string: str) -> bool:
