@@ -114,8 +114,10 @@ class GibberishScore:
     def get_deterministic_nongibberish_string(self, in_str: str):
         dngs = self.deterministic_string_mapping.get(in_str)
         if dngs is None:
-            dngs = self.pmc.get_nongibberish_string(len(in_str)+1)
-            self.deterministic_string_mapping[in_str] = dngs
+            dngs = list(self.pmc.get_nongibberish_string(len(in_str)+1))
+            for i in [i for i, c in enumerate(in_str) if c.isupper()]:
+                dngs[i] = dngs[i].upper()
+            self.deterministic_string_mapping[in_str] = ''.join(dngs)
         return dngs
 
     def is_gibberish(self, input_string: str) -> bool:
@@ -154,4 +156,4 @@ def gibberish_score_threshold_factory(dataset_txt: str) -> GibberishScore:
 
 
 if __name__ == '__main__':
-    pass
+    print(ou_str)
