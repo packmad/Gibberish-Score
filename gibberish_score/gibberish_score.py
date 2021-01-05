@@ -14,7 +14,7 @@ from networkx import DiGraph, MultiDiGraph
 
 class ProbabilityMarkovChain:
 
-    def __init__(self, top: int = 3):
+    def __init__(self, top: int = 5):
         self.markov_chain_graph = None
         self.multi_di_graph = MultiDiGraph()
         self.top = top  # top x probability for generating a string
@@ -101,7 +101,8 @@ class ProbabilityMarkovChain:
 class GibberishScore:
 
     def __init__(self, model_pickle: str):
-        self.pmc: ProbabilityMarkovChain = pickle.load(open(model_pickle, 'rb'))
+        with open(model_pickle, 'rb') as fp:
+            self.pmc: ProbabilityMarkovChain = pickle.load(fp)
         self.deterministic_string_mapping = dict()
         self.threshold = None
 
@@ -114,7 +115,7 @@ class GibberishScore:
     def get_deterministic_nongibberish_string(self, in_str: str):
         dngs = self.deterministic_string_mapping.get(in_str)
         if dngs is None:
-            dngs = list(self.pmc.get_nongibberish_string(len(in_str)+1))
+            dngs = list(self.pmc.get_nongibberish_string(len(in_str)))
             for i in [i for i, c in enumerate(in_str) if c.isupper()]:
                 dngs[i] = dngs[i].upper()
             dngs = ''.join(dngs)
@@ -157,4 +158,4 @@ def gibberish_score_threshold_factory(dataset_txt: str) -> GibberishScore:
 
 
 if __name__ == '__main__':
-    print(ou_str)
+    pass
