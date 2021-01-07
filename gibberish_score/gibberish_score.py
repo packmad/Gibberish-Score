@@ -6,6 +6,7 @@ import string
 import sys
 from collections import Counter, defaultdict
 from os.path import isfile, join, basename
+from random import randint
 from statistics import quantiles
 from typing import List
 
@@ -60,8 +61,8 @@ class ProbabilityMarkovChain:
             raise Exception('Logic flawed')
 
     def get_nongibberish_string(self, length: int) -> str:
-        if length < 2:
-            raise Exception('Length must be greater than 1')
+        if length <= 0:
+            raise Exception('Length must be greater than 0')
         model: DiGraph = self.build_model()
         out_str = []
         char = secrets.choice(string.ascii_lowercase)
@@ -103,8 +104,10 @@ class GibberishScore:
     def __init__(self, model_pickle: str):
         with open(model_pickle, 'rb') as fp:
             self.pmc: ProbabilityMarkovChain = pickle.load(fp)
-        self.deterministic_string_mapping = dict()
         self.threshold = None
+        self.deterministic_string_mapping = dict()
+        self.deterministic_string_codomain = set()
+        self.deterministic_string_codomain.add(None)
 
     def get_gibberish_score(self, input_string: str) -> float:
         return abs(math.frexp(self.pmc.get_score(input_string))[1])
@@ -112,13 +115,18 @@ class GibberishScore:
     def get_nongibberish_string(self, length: int):
         return self.pmc.get_nongibberish_string(length)
 
-    def get_deterministic_nongibberish_string(self, in_str: str):
+    def get_uniq_deterministic_nongibberish_string(self, in_str: str, same_length: bool = False):
         dngs = self.deterministic_string_mapping.get(in_str)
         if dngs is None:
-            dngs = list(self.pmc.get_nongibberish_string(len(in_str)))
-            for i in [i for i, c in enumerate(in_str) if c.isupper()]:
-                dngs[i] = dngs[i].upper()
-            dngs = ''.join(dngs)
+            length = len(in_str)
+            if not same_length:
+                length = randint(length, length+4)
+            while dngs in self.deterministic_string_codomain:
+                dngs = list(self.pmc.get_nongibberish_string(length))
+                for i in [i for i, c in enumerate(in_str) if c.isupper()]:
+                    dngs[i] = dngs[i].upper()
+                dngs = ''.join(dngs)
+            self.deterministic_string_codomain.add(dngs)
             self.deterministic_string_mapping[in_str] = dngs
         return dngs
 

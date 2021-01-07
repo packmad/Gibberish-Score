@@ -11,7 +11,7 @@ class TestStringMethods(unittest.TestCase):
 
     @staticmethod
     def generate_random_string(length: int) -> str:
-        return ''.join(secrets.choice(string.ascii_lowercase) for i in range(length))
+        return ''.join(secrets.choice(string.ascii_letters) for i in range(length))
 
     @classmethod
     def setUpClass(cls):
@@ -43,6 +43,10 @@ class TestStringMethods(unittest.TestCase):
         for w in self.random_words:
             self.assertTrue(self.gs.is_gibberish(w))
 
+    def test_stuff(self):
+        gs = GibberishScore('/home/simo/PycharmProjects/Gibberish-Score/datasets/english_words.txt_model.pickle')
+        for i in range(3, 21):
+            print(gs.get_deterministic_nongibberish_string(self.generate_random_string(i)))
 
 if __name__ == '__main__':
     unittest.main()
